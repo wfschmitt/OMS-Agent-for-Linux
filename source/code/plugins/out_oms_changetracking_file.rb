@@ -113,7 +113,10 @@ module Fluent
 
          @log.debug "contentlocationfilepath : #{contentlocationfilepath}"
          if File.exists?(contentlocationfilepath)
-            @@LastContentlocationUri = File.open(contentlocationfilepath, &:gets).strip
+            content = File.open(contentlocationfilepath, &:gets)
+            if !content.nil? and !content.empty?
+               @@LastContentlocationUri = content.strip
+            end
          end
       end
       @log.debug "LastContentlocationUri : #{@@LastContentlocationUri}"

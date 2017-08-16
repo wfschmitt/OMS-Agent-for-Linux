@@ -286,8 +286,24 @@ class ChangeTracking
                 end
     end
 
+    def self.setInventoryTimestamp(timestamp, file_path)
+        File.open(file_path, "w+", 0644) do |f| 
+             f.puts "#{timestamp}"
+        end
+    end
 
-    def self.transform_and_wrap(inventoryFile, inventoryHashFile)
+    def self.getInventoryTimestamp(file_path)
+        time = Time.now - (24 * 60 * 60)
+        if File.exist?(file_path)
+           content = File.open(file_path, &:gets)
+           if !content.nil? and !content.empty?
+              time = DateTime.parse(content).to_time
+           end
+        end
+        return time
+    end
+
+    def self.transform_and_wrap(inventoryFile, inventoryHashFile, inventoryTimestampFile)
         if File.exist?(inventoryFile)                       
             @@log.debug ("Found the change tracking inventory file.")
             # Get the parameters ready.
@@ -319,23 +335,20 @@ class ChangeTracking
             output = ChangeTracking.wrap(transformed_hash_map_with_changes_marked, @hostname, time)
             hash = current_inventory_checksum.to_json
 
-            # If there is a previous hash
-            if !previousSnapshot.nil?
-                # If you need to force send
-                previousSnapshotTime = DateTime.parse(previousSnapshot[LAST_UPLOAD_TIME]).to_time
-                if force_send_run_interval > 0 and 
-                    Time.now.to_i - previousSnapshotTime.to_i > force_send_run_interval
-                    ChangeTracking.setHash(hash, Time.now,inventoryHashFile)
-                elsif !changed_checksum.nil? and !changed_checksum.empty?
+            # Send inventory irrespectve of changes
+            lastInventoryTime = getInventoryTimestamp(inventoryTimestampFile)
+            if Time.now.to_i - lastInventoryTime.to_i > force_send_run_interval
+               setInventoryTimestamp(Time.now, inventoryTimestampFile)
+               ChangeTracking.setHash(hash, Time.now,inventoryHashFile)
+               return output
+            else
+               if !changed_checksum.nil? and !changed_checksum.empty?
                     ChangeTracking.setHash(hash, Time.now, inventoryHashFile)
-                else
+                    return output
+               else
                     return {}
-                end
-            else # Previous Hash did not exist. Write it
-                # and the return the output.
-                ChangeTracking.setHash(hash, Time.now, inventoryHashFile)
+               end
             end
-            return output
         else
             @@log.warn ("The ChangeTracking inventory xml file does not exists")
             return {}
