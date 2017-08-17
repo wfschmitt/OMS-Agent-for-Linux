@@ -1279,6 +1279,8 @@ main()
         remove_all || clean_exit 1
     fi
 
+    # TODO change service_control exit_if_agent_not_onboarded method to check that the file is not empty, as well as checking it in onboard()
+
     # If we reach this point, onboarding was successful, we can remove the
     # onboard conf to prevent accidentally re-onboarding 
     [ "$ONBOARD_FROM_FILE" = "1" ] && rm "$FILE_ONBOARD" > /dev/null 2>&1 || true
