@@ -91,7 +91,13 @@ exit_if_agent_not_onboarded()
 {
     if [ ! -f $OMSADMIN_CONF ]; then
         echo "Warning: Agent is not onboarded. omsagent cannot be registered as a service."
-        exit 0 
+        exit 0
+    else
+        OMSADMIN_CONTENTS=`cat $OMSADMIN_CONF` 2> /dev/null
+        if [ -z "$OMSADMIN_CONTENTS" ]; then
+            echo "Error: Agent onboarding file exists but is empty. omsagent cannot be registered as a service."
+            exit 0
+        fi
     fi
 }
 
