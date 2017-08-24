@@ -27,6 +27,8 @@ NON_OMS_WS="scom"
 
 setup_variables()
 {
+    # TODO guard against empty file there; if it is empty, print an error and exit
+    # TODO IDEA make a separate function to check for the file and if it's empty or not
     if [ -z "$1" ]; then
         if [ -f $ETC_DIR/conf/omsadmin.conf ]; then
             . "$ETC_DIR/conf/omsadmin.conf"
