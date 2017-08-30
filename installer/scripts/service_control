@@ -25,18 +25,44 @@ WORKSPACE_REGEX='^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0
 # Space seperated list of non oms workspaces
 NON_OMS_WS="scom"
 
+check_if_file_exists_and_is_non_empty()
+{
+    # $1 is path of file to check
+    # Returns 0 if file exists and is non-empty
+    # Returns 1 if file exists but is empty
+    # Returns 2 if file does not exist
+    if [ $# -ne 1 ]; then
+        echo "Error: wrong number of arguments to check_if_file_exists_and_is_non_empty"
+    fi
+    local file_contents="`cat $1 2> /dev/null`"
+    if [ -f $1 -a -n "$file_contents" ]; then
+        return 0
+    elif [ -f $1 ]; then
+        return 1
+    else
+        return 2
+    fi
+}
+
 setup_variables()
 {
-    # TODO guard against empty file there; if it is empty, print an error and exit
-    # TODO IDEA make a separate function to check for the file and if it's empty or not
+    # TODO make sure all callers of this handle a non-zero return code
+    # TODO guard against empty file there; if it is empty, print an error and return an error; actually, this call should not exit because it can get called multiple times in methods like start_all_omsagent
+
     if [ -z "$1" ]; then
-        if [ -f $ETC_DIR/conf/omsadmin.conf ]; then
-            . "$ETC_DIR/conf/omsadmin.conf"
+        local conf_path=$ETC_DIR/conf/omsadmin.conf
+        check_if_file_exists_and_is_non_empty $conf_path
+        local conf_status=$?
+        if [ $conf_status -eq 0 ]; then
+            . "$conf_path"
+        elif [ $conf_status -eq 1 ]; then
+            echo "Warning: There is an empty configuration file at $conf_path; please onboard to populate this configuration"
         else
             echo "Warning: No workspace is onboarded"
-            exit 0 
+            return 1
         fi
     else
+        # TODO update this case
         if [ -f $ETC_DIR/$1/conf/omsadmin.conf ]; then
             . "$ETC_DIR/$1/conf/omsadmin.conf"
         else
