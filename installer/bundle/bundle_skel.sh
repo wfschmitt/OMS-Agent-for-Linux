@@ -1000,6 +1000,7 @@ case "$installMode" in
         ;;
 
     U)
+        echo "trace 0 installMode U" >&2
         echo "Updating OMS agent ..."
 
         shouldInstall_omsagent
@@ -1008,16 +1009,19 @@ case "$installMode" in
         shouldInstall_omsconfig
         pkg_upd_list $DSC_PKG omsconfig $?
 
+        echo "trace 1 installMode U" >&2
         # Install SCX (and OMI)
         [ -n "${forceFlag}" ] && FORCE="--force" || FORCE=""
         [ -n "${debugMode}" ] && DEBUG="--debug" || DEBUG=""
         [ -n "${enableOMFlag}" ] && ENABLE_OM="--enable-opsmgr" || ENABLE_OM=""
+        echo "trace 2 installMode U" >&2
         ./bundles/${SCX_INSTALLER} --upgrade $FORCE $DEBUG $ENABLE_OM
         TEMP_STATUS=$?
         if [ $TEMP_STATUS -ne 0 ]; then
             echo "$SCX_INSTALLER package failed to upgrade and exited with status $TEMP_STATUS"
             cleanup_and_exit $SCX_INSTALL_FAILED
         fi
+        echo "trace 3 installMode U" >&2
 
         # Now actually install of the "queued" packages
         if [ -n "${upd_list}" ]; then
@@ -1032,6 +1036,7 @@ case "$installMode" in
         else
             echo "----- No base kits to update -----"
         fi
+        echo "trace 4 installMode U" >&2
 		
         if [ $KIT_STATUS -eq 0 ]; then
             # Remove fluentd conf for OMSConsistencyInvoker upon upgrade, if it exists
@@ -1043,11 +1048,13 @@ case "$installMode" in
             fi
             /opt/omi/bin/service_control restart
         fi
+        echo "trace 5 installMode U" >&2
 
         # Upgrade bundled providers
         [ -n "${forceFlag}" ] && FORCE="--force" || FORCE=""
         echo "----- Updating bundled packages -----"
         for i in oss-kits/*-oss-test.sh; do
+            echo "trace 5a installMode U" >&2
             # If filespec didn't expand, break out of loop
             [ ! -f $i ] && break
 
@@ -1064,8 +1071,11 @@ case "$installMode" in
                     BUNDLE_EXIT_STATUS=$SCX_KITS_INSTALL_FAILED
                 fi
             fi
+            echo "trace 5z installMode U" >&2
         done
+        echo "trace 6 installMode U" >&2
         for i in bundles/*-bundle-test.sh; do
+            echo "trace 6a installMode U" >&2
             # If filespec didn't expand, break out of loop
             [ ! -f $i ] && break
 
@@ -1082,7 +1092,9 @@ case "$installMode" in
                     BUNDLE_EXIT_STATUS=$BUNDLED_INSTALL_FAILED
                 fi
             fi
+            echo "trace 6z installMode U" >&2
         done
+        echo "trace 9 installMode U" >&2
         ;;
 
     *)
