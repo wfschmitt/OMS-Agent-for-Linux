@@ -33,6 +33,7 @@ check_if_file_exists_and_is_non_empty()
     # Returns 2 if file does not exist
     if [ $# -ne 1 ]; then
         echo "Error: wrong number of arguments to check_if_file_exists_and_is_non_empty"
+        return
     fi
     local file_contents="`cat $1 2> /dev/null`"
     if [ -f $1 -a -n "$file_contents" ]; then
@@ -49,27 +50,29 @@ setup_variables()
     # TODO make sure all callers of this handle a non-zero return code
     # TODO guard against empty file there; if it is empty, print an error and return an error; actually, this call should not exit because it can get called multiple times in methods like start_all_omsagent
 
+    local conf_path=
+    local conf_status=0
+    local ws_provided=""
     if [ -z "$1" ]; then
-        local conf_path=$ETC_DIR/conf/omsadmin.conf
-        check_if_file_exists_and_is_non_empty $conf_path
-        local conf_status=$?
-        if [ $conf_status -eq 0 ]; then
-            . "$conf_path"
-        elif [ $conf_status -eq 1 ]; then
-            echo "Warning: There is an empty configuration file at $conf_path; please onboard to populate this configuration"
-        else
-            echo "Warning: No workspace is onboarded"
-            return 1
-        fi
+        conf_path=$ETC_DIR/conf/omsadmin.conf
     else
-        # TODO update this case
-        if [ -f $ETC_DIR/$1/conf/omsadmin.conf ]; then
-            . "$ETC_DIR/$1/conf/omsadmin.conf"
-        else
-            echo "Warning: Specified workspace $1 does not exist on the machine. Check the correctness of the workspace ID and that onboarding succeeded."
-            exit 0
-        fi
+        conf_path=$ETC_DIR/$1/conf/omsadmin.conf
+        ws_provided=" $1"
     fi
+
+    # TODO Make sure this makes sense in both multi-homed case and non-multi-homed case
+    check_if_file_exists_and_is_non_empty $conf_path
+    conf_status=$?
+    if [ $conf_status -eq 0 ]; then
+        . "$conf_path"
+    elif [ $conf_status -eq 1 ]; then
+        echo "Warning: There is an empty configuration file at $conf_path; please onboard to populate this configuration"
+        return 1
+    else
+        echo "Warning: Workspace$1 is not onboarded"
+        return 1
+    fi
+
 
     VAR_DIR_WS=$VAR_DIR/$WORKSPACE_ID
     ETC_DIR_WS=$ETC_DIR/$WORKSPACE_ID
