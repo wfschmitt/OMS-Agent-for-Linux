@@ -6,21 +6,9 @@ class OmiOms
   attr_reader :specific_mapping
 
   def initialize(object_name, instance_regex, counter_name_regex, omi_mapping_path, omi_interface=nil, common=nil)
-    @object_name = object_name
-    @counter_name_regex = counter_name_regex
-    @instance_regex = instance_regex
-    @omi_mapping_path = omi_mapping_path
 
-    @specific_mapping = get_specific_mapping
-    if @specific_mapping
-      @conf_error = false
-      @instance_property = @specific_mapping["InstanceProperty"]
-      @cim_to_oms = get_cim_to_oms_mappings(@specific_mapping["CimProperties"])
-    else
-      @conf_error = true
-      return
-    end
-    
+    updateVars(object_name, instance_regex, counter_name_regex, omi_mapping_path)
+
     if common == nil
       common = OMS::Common
     end
@@ -35,6 +23,24 @@ class OmiOms
     end
     @omi_interface.connect
 
+  end
+  
+  def updateVars(object_name, instance_regex, counter_name_regex, omi_mapping_path)
+    @object_name = object_name
+    @counter_name_regex = counter_name_regex
+    @instance_regex = instance_regex
+    @omi_mapping_path = omi_mapping_path
+
+    @specific_mapping = get_specific_mapping
+    if @specific_mapping
+      @conf_error = false
+      @instance_property = @specific_mapping["InstanceProperty"]
+      @cim_to_oms = get_cim_to_oms_mappings(@specific_mapping["CimProperties"])
+    else
+      $log.info "Conf Error"
+      @conf_error = true
+      return
+    end
   end
 
   def get_specific_mapping
@@ -132,7 +138,7 @@ class OmiOms
     return oms_instance
   end
 
-  def enumerate(time)
+  def enumerate(time, data_type='LINUX_PERF_BLOB', ip_name='LogManagement')
     return nil if @conf_error
 
     namespace = @specific_mapping["Namespace"]
@@ -160,8 +166,8 @@ class OmiOms
 
     if instances.length > 0
       wrapper = {
-        "DataType"=>"LINUX_PERF_BLOB",
-        "IPName"=>"LogManagement",
+        "DataType"=>data_type,
+        "IPName"=>ip_name,
         "DataItems"=>instances
       }
       return wrapper
