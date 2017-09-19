@@ -598,7 +598,19 @@ onboard()
         echo
         echo "Generated request:"
         # TODO Daniel does not want the public key printed either
-        cat $BODY_ONBOARD
+        # TODO mask the section of the request surrounded by <AuthenticationCertificate> ... </AuthenticationCertificate>
+        # TODO can I keep the newlines intact? Let's see what I can do with sed
+        # example 1: REASON=`cat $RESP_ONBOARD | sed -n 's:.*<Reason>\(.*\)</Reason>.*:\1:p'`
+        # example 2: sed -i s,"command /opt/microsoft/omsagent/bin/omsadmin.sh -b > /dev/null","command echo > /dev/null",1 $CONF_DIR/omsagent.conf
+        # in order to replace the string in the printout but not the actual $BODY_ONBOARD file, best option may to store it in a var and replace it there
+        # sed "s/Suzi/$secondString/g" <<<"$firstString"
+        local body_original=`cat $BODY_ONBOARD 2> /dev/null`
+        # This isn't working; I believe because the match covers some newlines (echo "$body_original" | sed -n 's:.*<AuthenticationCertificate>\(.*\).*:\1:p' causes the first line of the cert to appear)
+        # TODO my idea is to replace all the newlines first, then replace the modified cert string
+        local auth_cert_covered=`echo "$body_original" | sed -n 's:.*<AuthenticationCertificate>\(.*\)</AuthenticationCertificate>.*:\1:p'`
+        # TODO turn all of these temp vars into locals
+        echo "$body_original" | sed "s/.*<AuthenticationCertificate>\(.*\)</AuthenticationCertificate>.*/$auth_cert_covered/g"
+        echo
     fi
 
     set_proxy_setting
